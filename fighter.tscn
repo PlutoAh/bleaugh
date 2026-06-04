@@ -1,0 +1,213 @@
+[gd_scene format=3 uid="uid://bgd25u2domvws"]
+
+[ext_resource type="Texture2D" uid="uid://ll3555yuvleu" path="res://blobsheet.png" id="1_umvcx"]
+[ext_resource type="Texture2D" uid="uid://blfruyird0kmh" path="res://faces/angry.png" id="2_umvcx"]
+
+[sub_resource type="GDScript" id="GDScript_umvcx"]
+resource_name = "fighter"
+script/source = "extends CharacterBody2D
+
+const faceoffset = [0,-2,-3,-2,0,-2,-3,-2]
+
+var bobt: Tween
+
+var speed := Vector2(0,0)
+const JUMP_VELOCITY = -1300.0
+var baseskew = 0
+
+func _input(event: InputEvent) -> void:
+	if (event.is_action_pressed(\"a\") and not Input.is_action_pressed(\"d\"))\\
+	or (event.is_action_pressed(\"d\") and not Input.is_action_pressed(\"a\"))\\
+	or (event.is_action_released(\"a\") and Input.is_action_pressed(\"d\"))\\
+	or (event.is_action_released(\"d\") and Input.is_action_pressed(\"a\")):
+		base.scale.x = Input.get_axis(\"a\",\"d\")
+		bob()
+		base.play(\"walk\")
+	elif (event.is_action_released(\"a\") and not Input.is_action_pressed(\"d\"))\\
+	or (event.is_action_released(\"d\") and not Input.is_action_pressed(\"a\"))\\
+	or (base.is_playing() and speed.x == 0):
+		base.stop()
+		base.frame = 0
+
+func bob():
+	base.scale.y = 0.8
+	if bobt: bobt.kill()
+	bobt = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	bobt.tween_property(base,\"scale:y\",1,0.2)
+
+var airborne = false
+var wallcling = false
+
+func _physics_process(delta: float) -> void:
+	shapecast.target_position = speed/100
+	if speed.length() > 2000 and shapecast.get_collision_count():
+		speed = speed.bounce(shapecast.get_collision_normal(0))
+		speed*=0.5
+		bob()
+	if is_on_wall():
+		speed.x = 0
+	if is_on_floor():
+		speed.y = 0
+	base.skew = (base.skew*2 + baseskew)/3
+	if not is_on_floor():
+		speed.y += delta*5000
+		airborne = true
+	elif airborne:
+		airborne = false
+		bob()
+	if Input.is_action_just_pressed(\"space\") and is_on_floor():
+		speed.y = JUMP_VELOCITY
+	
+	var direction := Input.get_axis(\"a\", \"d\")
+	
+	if Input.is_action_just_pressed(\"space\") and wallcling:
+		speed = Vector2(direction*-450,JUMP_VELOCITY)
+	
+	if direction:
+		baseskew = direction/10
+		if speed.x*direction < 700:
+			speed.x += direction * 30
+		else:
+			speed.x = 700*direction
+	else:
+		speed.x = move_toward(speed.x, 0, 40)
+		baseskew = -clampf(speed.x/1500,-0.2,0.2)
+	if is_on_floor() and direction and speed.x*direction < 0:
+		speed.x += direction * 20
+	
+	if is_on_wall_only() and speed.y > 0 and inputwalking():
+		speed.y -= delta*4000
+		if base.animation != \"wall\":
+			speed.y = move_toward(speed.y,0,600)
+			base.play(\"wall\")
+			wallcling = true
+	elif base.animation == \"wall\":
+		wallcling = false
+		base.play(\"walk\")
+		if not inputwalking():
+			base.stop()
+			base.frame = 0
+	velocity = speed
+	move_and_slide()
+
+@onready var shapecast: ShapeCast2D = $ShapeCast2D
+@onready var face: Sprite2D = $Base/face
+@onready var base: AnimatedSprite2D = $Base
+
+func inputwalking():
+	return (Input.is_action_pressed(\"a\") and not Input.is_action_pressed(\"d\")) or \\
+	(not Input.is_action_pressed(\"a\") and Input.is_action_pressed(\"d\"))
+
+
+func _on_base_frame_changed() -> void:
+	match base.animation:
+		\"fall\": face.position.y = -3
+		_: face.position.y = faceoffset[base.frame]
+"
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_qq641"]
+atlas = ExtResource("1_umvcx")
+region = Rect2(0, 0, 58, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_l3gly"]
+atlas = ExtResource("1_umvcx")
+region = Rect2(58, 0, 58, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_3ypa3"]
+atlas = ExtResource("1_umvcx")
+region = Rect2(116, 0, 58, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_f18uy"]
+atlas = ExtResource("1_umvcx")
+region = Rect2(174, 0, 58, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_066e6"]
+atlas = ExtResource("1_umvcx")
+region = Rect2(232, 0, 58, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_jxwme"]
+atlas = ExtResource("1_umvcx")
+region = Rect2(290, 0, 58, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_totlc"]
+atlas = ExtResource("1_umvcx")
+region = Rect2(348, 0, 58, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_2i83y"]
+atlas = ExtResource("1_umvcx")
+region = Rect2(406, 0, 58, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_umvcx"]
+atlas = ExtResource("1_umvcx")
+region = Rect2(464, 0, 58, 48)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_icdpr"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_qq641")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_l3gly")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_3ypa3")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_f18uy")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_066e6")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_jxwme")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_totlc")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_2i83y")
+}],
+"loop": true,
+"name": &"walk",
+"speed": 15.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_umvcx")
+}],
+"loop": true,
+"name": &"wall",
+"speed": 5.0
+}]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_umvcx"]
+size = Vector2(44, 44)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_qq641"]
+size = Vector2(42, 42)
+
+[node name="fighter" type="CharacterBody2D" unique_id=896489208]
+script = SubResource("GDScript_umvcx")
+
+[node name="Base" type="AnimatedSprite2D" parent="." unique_id=1754103935]
+position = Vector2(0, 23)
+sprite_frames = SubResource("SpriteFrames_icdpr")
+animation = &"walk"
+offset = Vector2(0, -23)
+
+[node name="face" type="Sprite2D" parent="Base" unique_id=1641297909]
+texture = ExtResource("2_umvcx")
+offset = Vector2(0, -23)
+
+[node name="collbox" type="CollisionShape2D" parent="." unique_id=1216142194]
+position = Vector2(0, 1)
+shape = SubResource("RectangleShape2D_umvcx")
+
+[node name="ShapeCast2D" type="ShapeCast2D" parent="." unique_id=1981122928]
+position = Vector2(0, 1)
+shape = SubResource("RectangleShape2D_qq641")
+target_position = Vector2(0, 0)
+max_results = 2
+
+[connection signal="frame_changed" from="Base" to="." method="_on_base_frame_changed"]

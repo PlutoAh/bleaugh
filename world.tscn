@@ -1,0 +1,30 @@
+[gd_scene format=3 uid="uid://c5ewjhopo1w7n"]
+
+[ext_resource type="PackedScene" uid="uid://bgd25u2domvws" path="res://fighter.tscn" id="1_f3sb7"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_fj7yv"]
+size = Vector2(1193, 35)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_f3sb7"]
+size = Vector2(37, 673)
+
+[node name="world" type="Node2D" unique_id=2024706425]
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1284950472]
+
+[node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=969302243]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D" unique_id=537101612]
+position = Vector2(-0.5, 334)
+shape = SubResource("RectangleShape2D_fj7yv")
+
+[node name="CollisionShape2D2" type="CollisionShape2D" parent="StaticBody2D" unique_id=903309008]
+position = Vector2(-576.5, 5.5)
+shape = SubResource("RectangleShape2D_f3sb7")
+
+[node name="CollisionShape2D3" type="CollisionShape2D" parent="StaticBody2D" unique_id=1260209416]
+position = Vector2(570, 1)
+shape = SubResource("RectangleShape2D_f3sb7")
+
+[node name="fighter" parent="." unique_id=896489208 instance=ExtResource("1_f3sb7")]
+position = Vector2(-259.71497, -238.86374)
