@@ -12,11 +12,14 @@ const faceoffset = [0,-2,-3,-2,0,-2,-3,-2]
 var bobt: Tween
 
 var speed := Vector2(0,0)
-const JUMP_VELOCITY = -1300.0
+const JUMP_VELOCITY = -1500.0
 var baseskew = 0
 
 func _input(event: InputEvent) -> void:
-	if (event.is_action_pressed(\"a\") and not Input.is_action_pressed(\"d\"))\\
+	if event.is_action_released(\"space\") and speed.y < 0 and aircontrol:
+		speed.y = ((-speed.y)**0.5)/-2
+		aircontrol = false
+	elif (event.is_action_pressed(\"a\") and not Input.is_action_pressed(\"d\"))\\
 	or (event.is_action_pressed(\"d\") and not Input.is_action_pressed(\"a\"))\\
 	or (event.is_action_released(\"a\") and Input.is_action_pressed(\"d\"))\\
 	or (event.is_action_released(\"d\") and Input.is_action_pressed(\"a\")):
@@ -37,31 +40,47 @@ func bob():
 
 var airborne = false
 var wallcling = false
+var aircontrol = false
+var jumpspent = false
+var heightgain = 0
 
 func _physics_process(delta: float) -> void:
-	shapecast.target_position = speed/100
-	if speed.length() > 2000 and shapecast.get_collision_count():
-		speed = speed.bounce(shapecast.get_collision_normal(0))
-		speed*=0.5
-		bob()
+	
+	var momentum = speed
+	
 	if is_on_wall():
 		speed.x = 0
 	if is_on_floor():
 		speed.y = 0
+	
 	base.skew = (base.skew*2 + baseskew)/3
 	if not is_on_floor():
 		speed.y += delta*5000
 		airborne = true
 	elif airborne:
 		airborne = false
+		aircontrol = false
 		bob()
-	if Input.is_action_just_pressed(\"space\") and is_on_floor():
-		speed.y = JUMP_VELOCITY
+		if momentum.length() > 2000:
+			speed.y = -momentum.y*0.5
 	
 	var direction := Input.get_axis(\"a\", \"d\")
 	
-	if Input.is_action_just_pressed(\"space\") and wallcling:
-		speed = Vector2(direction*-450,JUMP_VELOCITY)
+	if Input.is_action_just_pressed(\"space\"):
+		jumpspent = false
+	
+	if Input.is_action_pressed(\"space\") and not jumpspent:
+		if is_on_wall_only() and direction:
+			speed = Vector2(get_wall_normal().x*550,JUMP_VELOCITY) # bug: turning around while jumping makes it worse
+			
+			aircontrol = true
+			jumpspent = true
+		elif is_on_floor():
+			speed.y = JUMP_VELOCITY
+			aircontrol = true
+			jumpspent = true
+	
+	
 	
 	if direction:
 		baseskew = direction/10
@@ -76,11 +95,12 @@ func _physics_process(delta: float) -> void:
 		speed.x += direction * 20
 	
 	if is_on_wall_only() and speed.y > 0 and inputwalking():
-		speed.y -= delta*4000
+		speed.y -= delta*4200
 		if base.animation != \"wall\":
 			speed.y = move_toward(speed.y,0,600)
 			base.play(\"wall\")
 			wallcling = true
+			aircontrol = false
 	elif base.animation == \"wall\":
 		wallcling = false
 		base.play(\"walk\")
@@ -90,14 +110,12 @@ func _physics_process(delta: float) -> void:
 	velocity = speed
 	move_and_slide()
 
-@onready var shapecast: ShapeCast2D = $ShapeCast2D
 @onready var face: Sprite2D = $Base/face
 @onready var base: AnimatedSprite2D = $Base
 
 func inputwalking():
 	return (Input.is_action_pressed(\"a\") and not Input.is_action_pressed(\"d\")) or \\
 	(not Input.is_action_pressed(\"a\") and Input.is_action_pressed(\"d\"))
-
 
 func _on_base_frame_changed() -> void:
 	match base.animation:
@@ -184,9 +202,6 @@ animations = [{
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_umvcx"]
 size = Vector2(44, 44)
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_qq641"]
-size = Vector2(42, 42)
-
 [node name="fighter" type="CharacterBody2D" unique_id=896489208]
 script = SubResource("GDScript_umvcx")
 
@@ -203,11 +218,5 @@ offset = Vector2(0, -23)
 [node name="collbox" type="CollisionShape2D" parent="." unique_id=1216142194]
 position = Vector2(0, 1)
 shape = SubResource("RectangleShape2D_umvcx")
-
-[node name="ShapeCast2D" type="ShapeCast2D" parent="." unique_id=1981122928]
-position = Vector2(0, 1)
-shape = SubResource("RectangleShape2D_qq641")
-target_position = Vector2(0, 0)
-max_results = 2
 
 [connection signal="frame_changed" from="Base" to="." method="_on_base_frame_changed"]
